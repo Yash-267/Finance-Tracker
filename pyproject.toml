@@ -1,0 +1,14 @@
+[project]
+name = "finance"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.141.1",
+    "fastapi-users[sqlalchemy]>=15.0.5",
+    "passlib[bcrypt]>=1.7.4",
+    "python-dotenv>=1.2.3",
+    "python-jose>=3.5.0",
+    "uvicorn[standard]>=0.52.4",
+]
