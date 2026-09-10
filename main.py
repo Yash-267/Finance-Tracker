@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from database import Base, engine
 from models import User, Transaction
-from router import auth
+from router import auth,expense
 
 app = FastAPI(title = "personal finance app")
 app.include_router(auth.router)
+app.include_router(expense.router)
 
 Base.metadata.create_all(bind=engine)
 

@@ -8,6 +8,7 @@ from security import hash_password, verify_password, create_access_token, get_cu
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+#Register a new user
 @router.post("/register")
 def register_user(user: UserCreate, db:Session = Depends(get_db)):
 
@@ -29,6 +30,7 @@ def register_user(user: UserCreate, db:Session = Depends(get_db)):
 
     return {"message": "User registered successfully", "user_id": new_user.id}
 
+#Login
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.execute(select(User).where(User.email == user.email)).scalar_one_or_none()
@@ -46,6 +48,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         "user_id": db_user.id
     }   
 
+#Current user profile
 @router.get("/me")
 def profile(current_user: User = Depends(get_current_user)):
     return {

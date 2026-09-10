@@ -1,5 +1,6 @@
 from pydantic import BaseModel,Field
 from typing import Optional,Literal
+from datetime import datetime,timezone
 
 class UserCreate(BaseModel):
     username: str
@@ -14,5 +15,5 @@ class TransactionCreate(BaseModel):
     amount: float = Field(gt=0)
     type: Literal["income", "expense"]
     description: str | None = None
-    date: str  
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     category: str = Field(min_length=1)
