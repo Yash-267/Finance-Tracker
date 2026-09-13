@@ -13,6 +13,11 @@ from calendar import monthrange
 
 router = APIRouter(prefix="/transactions", tags=["Expenses"])
 
+def ensure_utc(dt: datetime) -> datetime:
+    """Normalize a datetime to timezone-aware UTC, treating naive datetimes as UTC."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 def calculate_next_due(current_date: datetime, frequency: str) -> datetime:
     """Given a date and a frequency, return the next due date."""
@@ -56,7 +61,9 @@ def get_all_transactions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    transactions = db.execute(select(Transaction).where(Transaction.user_id == current_user.id)).scalars().all()
+    transactions = db.execute(
+        select(Transaction).where(Transaction.user_id == current_user.id)
+        .order_by(Transaction.created_at.desc())).scalars().all()
     return transactions
 
 
@@ -172,7 +179,13 @@ def create_recurring_transaction(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    next_due = calculate_next_due(recurring_transaction.start_date, recurring_transaction.frequency)
+    start_date = ensure_utc(recurring_transaction.start_date)
+    now = datetime.now(timezone.utc)
+    starts_in_future = start_date > now
+
+    # Future start_date: next_due IS the start_date — nothing fires until then.
+    # Past/today start_date: fire now, next_due becomes one interval later.
+    next_due = start_date if starts_in_future else calculate_next_due(start_date, recurring_transaction.frequency)
 
     new_recurring_transaction = RecurringTransaction(
         amount=recurring_transaction.amount,
@@ -180,35 +193,40 @@ def create_recurring_transaction(
         category=recurring_transaction.category,
         description=recurring_transaction.description,
         frequency=recurring_transaction.frequency,
-        start_date=recurring_transaction.start_date,
+        start_date=start_date,
         next_due=next_due,
         user_id=current_user.id
     )
     db.add(new_recurring_transaction)
-    db.flush()  # assigns new_recurring_transaction.id without committing yet
+    db.flush()
 
-    # Fire the first transaction immediately, dated to the start_date
-    initial_transaction = Transaction(
-        amount=recurring_transaction.amount,
-        type=recurring_transaction.type,
-        category=recurring_transaction.category,
-        description=recurring_transaction.description,
-        created_at=recurring_transaction.start_date,
-        user_id=current_user.id
-    )
-    db.add(initial_transaction)
+    initial_transaction = None
+    if not starts_in_future:
+        initial_transaction = Transaction(
+            amount=recurring_transaction.amount,
+            type=recurring_transaction.type,
+            category=recurring_transaction.category,
+            description=recurring_transaction.description,
+            created_at=start_date,
+            user_id=current_user.id
+        )
+        db.add(initial_transaction)
 
     db.commit()
     db.refresh(new_recurring_transaction)
-    db.refresh(initial_transaction)
+    if initial_transaction:
+        db.refresh(initial_transaction)
 
     return {
-        "message": "Recurring transaction added successfully",
+        "message": (
+            "Recurring transaction scheduled — it will start once the start date arrives"
+            if starts_in_future
+            else "Recurring transaction added successfully"
+        ),
         "recurring_transaction_id": new_recurring_transaction.id,
-        "initial_transaction_id": initial_transaction.id,
+        "initial_transaction_id": initial_transaction.id if initial_transaction else None,
         "next_due": new_recurring_transaction.next_due
     }
-
 
 #pause a recurring transaction — freezes it. next_due is left untouched and
 #simply ignored by the scheduler while inactive 
@@ -307,6 +325,7 @@ def get_all_recurring_transactions(
             "amount": r.amount,
             "type": r.type,
             "frequency": r.frequency,
+            "description": r.description,
             "next_due": r.next_due,
             "active": r.active
         }

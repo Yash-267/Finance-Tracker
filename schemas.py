@@ -25,3 +25,24 @@ class RecurringTransactionCreate(BaseModel):
     description: str
     frequency: Literal["daily", "monthly", "weekly", "yearly"]
     start_date: datetime
+
+class GroupCreate(BaseModel):
+    name: str = Field(min_length=1)
+
+class GroupMemberAdd(BaseModel):
+    email: str  
+
+class ExpenseShareInput(BaseModel):
+    user_id: int
+    amount: float = Field(gt=0)
+
+class GroupExpenseCreate(BaseModel):
+    amount: float = Field(gt=0)
+    description: str = Field(min_length=1)
+    split_type: Literal["equal", "custom"]
+    participant_ids: Optional[list[int]] = None          
+    custom_shares: Optional[list[ExpenseShareInput]] = None  
+
+class SettlementCreate(BaseModel):
+    paid_to: int
+    amount: float = Field(gt=0)

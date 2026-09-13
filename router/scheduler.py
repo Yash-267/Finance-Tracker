@@ -4,20 +4,17 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select
 
-from database import SessionLocal  # requires SessionLocal to be exported from database.py
+from database import SessionLocal 
 from models import RecurringTransaction, Transaction
 from router.expense import calculate_next_due
 
 logger = logging.getLogger(__name__)
 
-CHECK_INTERVAL_SECONDS = 60  # how often to poll for due recurring transactions
+CHECK_INTERVAL_SECONDS = 60  
 
 
 def process_due_recurring_transactions() -> None:
-    """Find every active recurring transaction that is due (or overdue),
-    generate the missed transaction(s), and advance next_due until it's
-    in the future. Only touches active rows — paused ones are skipped
-    entirely, exactly as intended. Safe to call repeatedly / on startup."""
+    
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
