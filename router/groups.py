@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from database import get_db
 from models import User, Group, GroupMember, GroupExpense, ExpenseShare, Settlement
@@ -28,7 +28,7 @@ def get_group_or_404(db: Session, group_id: int) -> Group:
 
 
 def calculate_group_balances(db: Session, group_id: int) -> dict:
-    """Logic - Derives net pairwise balances within a group from every expense share
+    """Derives net pairwise balances within a group from every expense share
     and settlement on record — nothing is ever stored as 'current balance'.
     Returns {(ower_id, payer_id): amount}, netted down to one direction per pair."""
     raw = defaultdict(float)
@@ -131,7 +131,7 @@ def get_group(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    get_group_or_404(db, group_id)
+    group = get_group_or_404(db, group_id)
     ensure_group_member(db, group_id, current_user.id)
 
     members = db.execute(
@@ -141,11 +141,42 @@ def get_group(
 
     return {
         "id": group_id,
+        "name": group.name,
         "members": [{"id": m.id, "username": m.username, "email": m.email} for m in members]
     }
 
 
-#add a shared expense to a group, with an equal or custom split
+#delete an entire group — any member can do this. Cascades through every
+#row that references the group, since nothing should be left dangling:
+#expense shares → expenses → settlements → memberships → the group itself
+@router.delete("/{group_id}")
+def delete_group(
+    group_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    group = get_group_or_404(db, group_id)
+    ensure_group_member(db, group_id, current_user.id)
+
+    expense_ids = db.execute(
+        select(GroupExpense.id).where(GroupExpense.group_id == group_id)
+    ).scalars().all()
+
+    if expense_ids:
+        db.execute(delete(ExpenseShare).where(ExpenseShare.group_expense_id.in_(expense_ids)))
+
+    db.execute(delete(GroupExpense).where(GroupExpense.group_id == group_id))
+    db.execute(delete(Settlement).where(Settlement.group_id == group_id))
+    db.execute(delete(GroupMember).where(GroupMember.group_id == group_id))
+
+    db.delete(group)
+    db.commit()
+
+    return {"message": f"Group '{group.name}' deleted successfully"}
+
+#add a shared expense to a group, with an equal or custom split.
+#paid_by defaults to whoever is logged in, but can be set to any other
+#group member — e.g. Yash logging that Priyansh actually paid the taxi.
 @router.post("/{group_id}/expenses")
 def create_group_expense(
     group_id: int,
@@ -162,6 +193,10 @@ def create_group_expense(
         ).scalars().all()
     }
 
+    paid_by = expense.paid_by if expense.paid_by is not None else current_user.id
+    if paid_by not in member_ids:
+        raise HTTPException(status_code=400, detail="The payer must be a member of this group")
+
     if expense.split_type == "equal":
         participants = expense.participant_ids or list(member_ids)
         invalid = set(participants) - member_ids
@@ -174,8 +209,6 @@ def create_group_expense(
         base_share = round(expense.amount / n, 2)
         shares = {uid: base_share for uid in participants}
 
-        # equal division rarely divides exactly — push the rounding remainder
-        # onto the last participant so shares always sum to the exact total
         drift = round(expense.amount - base_share * n, 2)
         shares[participants[-1]] = round(shares[participants[-1]] + drift, 2)
 
@@ -197,7 +230,7 @@ def create_group_expense(
 
     new_expense = GroupExpense(
         group_id=group_id,
-        paid_by=current_user.id,
+        paid_by=paid_by,
         amount=expense.amount,
         description=expense.description
     )
@@ -242,7 +275,36 @@ def list_group_expenses(
     return result
 
 
-#record a settlement — the current user repaying someone else in the group
+#delete a group expense — any group member can remove it, and every
+#balance recalculates automatically since balances are always derived,
+#never stored
+@router.delete("/{group_id}/expenses/{expense_id}")
+def delete_group_expense(
+    group_id: int,
+    expense_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    get_group_or_404(db, group_id)
+    ensure_group_member(db, group_id, current_user.id)
+
+    expense = db.execute(
+        select(GroupExpense).where(GroupExpense.id == expense_id, GroupExpense.group_id == group_id)
+    ).scalar_one_or_none()
+    if not expense:
+        raise HTTPException(status_code=404, detail="Group expense not found")
+
+    db.execute(delete(ExpenseShare).where(ExpenseShare.group_expense_id == expense_id))
+    db.delete(expense)
+    db.commit()
+
+    return {"message": "Group expense deleted successfully"}
+
+
+#record a settlement — the current user repaying someone else in the group.
+#Kept separate from personal Transactions (see conversation notes) since
+#syncing it without also syncing the original group expense would
+#misrepresent actual cash flow.
 @router.post("/{group_id}/settle")
 def create_settlement(
     group_id: int,

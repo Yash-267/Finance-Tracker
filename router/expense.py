@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
 from database import get_db
-from models import Transaction, User, RecurringTransaction
+from models import Transaction, User, RecurringTransaction, Budget, BudgetAlert
 from schemas import TransactionCreate, RecurringTransactionCreate
 from security import get_current_user
 
@@ -33,6 +33,73 @@ def calculate_next_due(current_date: datetime, frequency: str) -> datetime:
         raise ValueError(f"Unsupported frequency: {frequency}")
 
 
+def check_budget_thresholds(db: Session, user_id: int, category: str, transaction_date: datetime) -> None:
+    """Called right after an expense transaction is inserted (manual or
+    recurring-generated — both flow through the same Transaction table).
+    Checks whether this category's spend, for the MONTH THE TRANSACTION
+    BELONGS TO, has crossed 80% or 100% of the user's budget for that
+    category, and logs an alert exactly once per threshold per month.
+    Does not commit — the caller commits alongside its own changes."""
+    budget = db.execute(
+        select(Budget).where(
+            Budget.user_id == user_id,
+            Budget.category == category,
+            Budget.active == True
+        )
+    ).scalar_one_or_none()
+
+    if not budget:
+        return
+
+    year = transaction_date.year
+    month = transaction_date.month
+
+    start_date = datetime(year, month, 1, tzinfo=timezone.utc)
+    last_day = monthrange(year, month)[1]
+    end_date = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc)
+
+    spent = db.scalar(
+        select(func.sum(Transaction.amount)).where(
+            Transaction.user_id == user_id,
+            Transaction.category == category,
+            Transaction.type == "expense",
+            Transaction.created_at >= start_date,
+            Transaction.created_at <= end_date
+        )
+    ) or 0
+
+    if spent >= budget.monthly_limit:
+        threshold = "exceeded"
+        message = f"You've exceeded your {category} budget of ₹{budget.monthly_limit:.2f} — spent ₹{spent:.2f} this month."
+    elif spent >= 0.8 * budget.monthly_limit:
+        threshold = "approaching"
+        percent = spent / budget.monthly_limit * 100
+        message = f"You've used {percent:.0f}% of your {category} budget this month (₹{spent:.2f} of ₹{budget.monthly_limit:.2f})."
+    else:
+        return
+
+    already_alerted = db.execute(
+        select(BudgetAlert).where(
+            BudgetAlert.budget_id == budget.id,
+            BudgetAlert.year == year,
+            BudgetAlert.month == month,
+            BudgetAlert.threshold == threshold
+        )
+    ).scalar_one_or_none()
+
+    if already_alerted:
+        return
+
+    db.add(BudgetAlert(
+        budget_id=budget.id,
+        user_id=user_id,
+        threshold=threshold,
+        year=year,
+        month=month,
+        message=message
+    ))
+
+
 #add transaction
 @router.post("/add")
 def create_transaction(
@@ -51,6 +118,10 @@ def create_transaction(
     db.add(new_transaction)
     db.commit()
     db.refresh(new_transaction)
+
+    if new_transaction.type == "expense":
+        check_budget_thresholds(db, current_user.id, new_transaction.category, new_transaction.created_at)
+        db.commit()
 
     return {"message": "Transaction added successfully", "transaction_id": new_transaction.id}
 
@@ -183,8 +254,6 @@ def create_recurring_transaction(
     now = datetime.now(timezone.utc)
     starts_in_future = start_date > now
 
-    # Future start_date: next_due IS the start_date — nothing fires until then.
-    # Past/today start_date: fire now, next_due becomes one interval later.
     next_due = start_date if starts_in_future else calculate_next_due(start_date, recurring_transaction.frequency)
 
     new_recurring_transaction = RecurringTransaction(
@@ -216,6 +285,9 @@ def create_recurring_transaction(
     db.refresh(new_recurring_transaction)
     if initial_transaction:
         db.refresh(initial_transaction)
+        if initial_transaction.type == "expense":
+            check_budget_thresholds(db, current_user.id, initial_transaction.category, initial_transaction.created_at)
+            db.commit()
 
     return {
         "message": (
@@ -255,8 +327,6 @@ def pause_recurring_transaction(
 
 
 #resume a recurring transaction — restarts the cycle from right now
-#no back-fill, no skipping through missed dates,
-#next_due becomes "now + one interval")
 @router.patch("/recurring/{recurring_id}/resume")
 def resume_recurring_transaction(
     recurring_id: int,

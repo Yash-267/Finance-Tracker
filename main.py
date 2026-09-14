@@ -5,7 +5,7 @@ from models import User, Transaction
 import asyncio
 from contextlib import asynccontextmanager
 
-from router import auth, expense, admin , groups         
+from router import auth, expense, admin , groups , budgets       
 from router.scheduler import recurring_transaction_scheduler, process_due_recurring_transactions
 
 @asynccontextmanager
@@ -22,6 +22,7 @@ app.include_router(auth.router)
 app.include_router(expense.router)
 app.include_router(admin.router)
 app.include_router(groups.router)
+app.include_router(budgets.router)
 
 Base.metadata.create_all(bind=engine)
 

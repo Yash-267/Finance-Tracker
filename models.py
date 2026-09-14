@@ -96,3 +96,28 @@ class Settlement(Base):
     paid_to: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"))   # who receives the repayment
     amount: Mapped[float] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+class Budget(Base):
+    __tablename__ = "budgets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), index=True)
+    category: Mapped[str] = mapped_column(String(225))
+    monthly_limit: Mapped[float] = mapped_column(Float)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class BudgetAlert(Base):
+    __tablename__ = "budget_alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    budget_id: Mapped[int] = mapped_column(Integer, ForeignKey("budgets.id"), index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), index=True)
+    threshold: Mapped[str] = mapped_column(String(20))  # "approaching" or "exceeded"
+    year: Mapped[int] = mapped_column(Integer)
+    month: Mapped[int] = mapped_column(Integer)
+    message: Mapped[str] = mapped_column(String(225))
+    read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

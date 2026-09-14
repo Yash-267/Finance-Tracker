@@ -36,13 +36,21 @@ class ExpenseShareInput(BaseModel):
     user_id: int
     amount: float = Field(gt=0)
 
+class SettlementCreate(BaseModel):
+    paid_to: int
+    amount: float = Field(gt=0)
+
+class BudgetCreate(BaseModel):
+    category: str = Field(min_length=1)
+    monthly_limit: float = Field(gt=0)
+
+class BudgetUpdate(BaseModel):
+    monthly_limit: float = Field(gt=0)
+
 class GroupExpenseCreate(BaseModel):
     amount: float = Field(gt=0)
     description: str = Field(min_length=1)
     split_type: Literal["equal", "custom"]
-    participant_ids: Optional[list[int]] = None          
-    custom_shares: Optional[list[ExpenseShareInput]] = None  
-
-class SettlementCreate(BaseModel):
-    paid_to: int
-    amount: float = Field(gt=0)
+    participant_ids: Optional[list[int]] = None
+    custom_shares: Optional[list[ExpenseShareInput]] = None
+    paid_by: Optional[int] = None  # defaults to the logged-in user if omitted
