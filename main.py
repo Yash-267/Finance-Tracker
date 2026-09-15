@@ -24,7 +24,6 @@ app.include_router(admin.router)
 app.include_router(groups.router)
 app.include_router(budgets.router)
 
-Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
