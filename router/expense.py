@@ -326,7 +326,6 @@ def pause_recurring_transaction(
     return {"message": "Recurring transaction paused successfully"}
 
 
-#resume a recurring transaction — restarts the cycle from right now
 @router.patch("/recurring/{recurring_id}/resume")
 def resume_recurring_transaction(
     recurring_id: int,
@@ -347,7 +346,10 @@ def resume_recurring_transaction(
         return {"message": "Recurring transaction is already active"}
 
     now = datetime.now(timezone.utc)
-    recurring.next_due = calculate_next_due(now, recurring.frequency)
+
+    if recurring.next_due != recurring.start_date:
+        recurring.next_due = calculate_next_due(now, recurring.frequency)
+
     recurring.active = True
     db.commit()
 
