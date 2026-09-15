@@ -721,3 +721,19 @@ h1, h2 {
 .expense-form { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .ledger-table.group-expenses .ledger-row { grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.6fr; }
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.4rem;
+}
+
+.user-info span:first-child {
+  font-weight: 600;
+}
+
+.user-info span:last-child {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}

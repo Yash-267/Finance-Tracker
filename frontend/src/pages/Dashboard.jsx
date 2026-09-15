@@ -8,6 +8,11 @@ export default function Dashboard() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [summary, setSummary] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    api.get("/auth/me").then((res) => setProfile(res.data));
+  }, []);
 
   useEffect(() => {
     api.get(`/transactions/analytics/monthly?year=${year}&month=${month}`).then((res) => setSummary(res.data));
@@ -16,14 +21,29 @@ export default function Dashboard() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Monthly-Dashboard</h1>
+        <div>
+          <h1>Monthly-Dashboard</h1>
+
+          {profile && (
+            <div className="user-info">
+              <span>{profile.username}</span>
+              <span>{profile.email}</span>
+            </div>
+          )}
+        </div>
+
         <div className="month-picker">
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {monthNames.map((name, i) => (
               <option key={i} value={i + 1}>{name}</option>
             ))}
           </select>
-          <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+
+          <input
+            type="number"
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+          />
         </div>
       </div>
 
@@ -33,10 +53,12 @@ export default function Dashboard() {
             <span className="stat-label">Income</span>
             <span className="stat-value">₹{summary.total_income.toFixed(2)}</span>
           </div>
+
           <div className="stat-block stat-expense">
             <span className="stat-label">Expense</span>
             <span className="stat-value">₹{summary.total_expense.toFixed(2)}</span>
           </div>
+
           <div className="stat-block stat-balance">
             <span className="stat-label">Balance</span>
             <span className="stat-value">₹{summary.monthly_balance.toFixed(2)}</span>
