@@ -1,3 +1,7 @@
+/* ======================================================================
+   1. GLOBAL STYLES, FONTS & CSS VARIABLES
+   ====================================================================== */
+
 @import url('https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
@@ -47,6 +51,10 @@ h1, h2 {
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* App shell */
+/* ======================================================================
+   2. APP SHELL, SIDEBAR & MAIN LAYOUT
+   ====================================================================== */
+
 
 .app-shell {
   display: flex;
@@ -148,6 +156,10 @@ h1, h2 {
   background: #FFFFFF;
 }
 
+
+/* ======================================================================
+   3. AUTHENTICATION PAGES (LOGIN / SIGN-UP)
+   ====================================================================== */
 
 /* =========================
    Auth pages
@@ -457,6 +469,10 @@ h1, h2 {
   }
 }
 
+/* ======================================================================
+   4. DASHBOARD & SHARED PAGE LAYOUT
+   ====================================================================== */
+
 /* Page layout */
 .page-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; }
 
@@ -494,6 +510,9 @@ h1, h2 {
 
 .empty-note { color: var(--ink-soft); font-size: 0.9rem; }
 
+/* ----------------------------------------------------------------------
+   5. SHARED INLINE FORMS & FORM CONTROLS
+   ---------------------------------------------------------------------- */
 /* Forms */
 .inline-form { display: flex; gap: 0.6rem; margin: 1.5rem 0 0.6rem; flex-wrap: wrap; }
 .inline-form input, .inline-form select {
@@ -510,6 +529,9 @@ h1, h2 {
   cursor: pointer;
 }
 
+/* ----------------------------------------------------------------------
+   6. LEDGER TABLES & TRANSACTION / RECURRING ROWS
+   ---------------------------------------------------------------------- */
 /* Ledger table */
 .ledger-table { margin-top: 1rem; border-top: 2px solid var(--ink); }
 
@@ -551,6 +573,9 @@ h1, h2 {
 .link-button:hover { color: var(--ink); }
 .link-danger:hover { color: var(--expense); }
 
+/* ----------------------------------------------------------------------
+   7. RESPONSIVE APP LAYOUT & LEDGER TABLES
+   ---------------------------------------------------------------------- */
 @media (max-width: 720px) {
   .app-shell { flex-direction: column; }
   .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 1rem 1.5rem; border-right: none; border-bottom: 2px solid var(--ink); }
@@ -559,6 +584,10 @@ h1, h2 {
   .dashboard-grid { grid-template-columns: 1fr; }
   .ledger-row { grid-template-columns: 1fr !important; gap: 0.2rem; }
 }
+
+/* ======================================================================
+   8. TRANSACTION FILTERS & MONTH NAVIGATION
+   ====================================================================== */
 
 .filter-bar { display: flex; align-items: center; gap: 0.6rem; margin: 1rem 0; }
 .filter-bar select {
@@ -597,6 +626,10 @@ h1, h2 {
   text-align: center;
 }
 
+/* ======================================================================
+   9. ADMIN USERS & NAVIGATION BADGES
+   ====================================================================== */
+
 .ledger-table.admin-users .ledger-row { grid-template-columns: 1fr 1.6fr 0.7fr 0.7fr; }
 
 .nav-badge {
@@ -607,6 +640,10 @@ h1, h2 {
   padding: 0.05rem 0.4rem;
   margin-left: 0.4rem;
 }
+
+/* ======================================================================
+   10. BUDGETS & BUDGET PROGRESS INDICATORS
+   ====================================================================== */
 
 .budget-list { margin-top: 1.5rem; }
 
@@ -654,6 +691,10 @@ h1, h2 {
 .budget-percent.approaching { color: var(--warning); }
 .budget-percent.exceeded { color: var(--expense); }
 
+/* ======================================================================
+   11. BUDGET ALERTS & UNREAD INDICATORS
+   ====================================================================== */
+
 .alert-list { margin-top: 1.5rem; }
 
 .alert-item {
@@ -675,6 +716,10 @@ h1, h2 {
   background: var(--expense);
   margin-right: 0.6rem;
 }
+
+/* ======================================================================
+   12. GROUPS, SHARED EXPENSES & PARTICIPANTS
+   ====================================================================== */
 
 .group-list { display: flex; flex-direction: column; gap: 1px; background: var(--line); margin-top: 1.5rem; }
 
@@ -721,6 +766,10 @@ h1, h2 {
 .expense-form { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .ledger-table.group-expenses .ledger-row { grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.6fr; }
+
+/* ======================================================================
+   13. USER INFORMATION DISPLAY
+   ====================================================================== */
 
 .user-info {
   display: flex;
