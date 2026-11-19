@@ -14,6 +14,13 @@ class UserLogin(BaseModel):
 class AccountDelete(BaseModel):
     password: str = Field(min_length=1)
 
+class ForgotPassword(BaseModel):
+    email: str = Field(min_length=1, max_length=225)
+
+class ResetPassword(BaseModel):
+    token: str = Field(min_length=43, max_length=43, pattern=r"^[A-Za-z0-9_-]+$")
+    password: str = Field(min_length=8, max_length=128)
+
 class TransactionCreate(BaseModel):
     amount: float = Field(gt=0)
     type: Literal["income", "expense"]

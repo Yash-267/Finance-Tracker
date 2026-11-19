@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const EyeIcon = (props) => (
@@ -25,6 +25,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { state } = useLocation();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -50,6 +51,7 @@ export default function Login() {
             <p className="auth-subtitle-lg">Sign in to keep track of your money.</p>
           </div>
 
+          {state?.passwordReset && <p role="status">Password updated. Sign in with your new password.</p>}
           <form onSubmit={handleSubmit}>
             <div className="auth-field auth-animate" style={{ animationDelay: "0.15s" }}>
               <label htmlFor="email">Email</label>
@@ -93,6 +95,8 @@ export default function Login() {
           </form>
 
           <p className="auth-footer-text auth-animate" style={{ animationDelay: "0.38s" }}>
+            <Link to="/forgot-password">Forgot password?</Link>
+            <br />
             No account? <Link to="/register">Create one</Link>
           </p>
         </div>

@@ -1,15 +1,77 @@
-from fastapi import APIRouter, Depends, HTTPException
-from schemas import AccountDelete, UserCreate, UserLogin
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
+from secrets import token_urlsafe
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from schemas import AccountDelete, ForgotPassword, ResetPassword, UserCreate, UserLogin
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import delete, func, or_, select, update
 from models import (
     Budget, BudgetAlert, ExpenseShare, Group, GroupExpense, GroupMember,
-    RecurringTransaction, Settlement, Transaction, User,
+    PasswordResetToken, RecurringTransaction, Settlement, Transaction, User,
 )
-from database import get_db
+from database import SessionLocal, get_db
+from mailer import send_password_reset
 from security import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def issue_password_reset(email: str) -> None:
+    with SessionLocal() as db:
+        user_id = db.scalar(select(User.id).where(User.email == email))
+        if user_id is None:
+            return
+
+        token = token_urlsafe(32)
+        token_hash = sha256(token.encode()).hexdigest()
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+        # At most one reset email per account every five minutes.
+        replaced = db.execute(
+            update(PasswordResetToken)
+            .where(
+                PasswordResetToken.user_id == user_id,
+                PasswordResetToken.expires_at <= expires_at - timedelta(minutes=5),
+            )
+            .values(token_hash=token_hash, expires_at=expires_at)
+            .returning(PasswordResetToken.user_id)
+        ).scalar_one_or_none()
+        if replaced is None:
+            if db.get(PasswordResetToken, user_id) is not None:
+                return
+            db.add(PasswordResetToken(user_id=user_id, token_hash=token_hash, expires_at=expires_at))
+        try:
+            db.commit()
+        except IntegrityError:
+            # A concurrent request already inserted a token, or the user was deleted.
+            db.rollback()
+            return
+
+    send_password_reset(email, token)
+
+
+@router.post("/forgot-password", status_code=202)
+def forgot_password(request: ForgotPassword, background_tasks: BackgroundTasks):
+    background_tasks.add_task(issue_password_reset, request.email.strip())
+    return {"message": "If an account matches that email, a reset link will be sent."}
+
+
+@router.post("/reset-password", status_code=204)
+def reset_password(request: ResetPassword, db: Session = Depends(get_db)):
+    user_id = db.execute(
+        delete(PasswordResetToken)
+        .where(
+            PasswordResetToken.token_hash == sha256(request.token.encode()).hexdigest(),
+            PasswordResetToken.expires_at > datetime.now(timezone.utc),
+        )
+        .returning(PasswordResetToken.user_id)
+    ).scalar_one_or_none()
+    if user_id is None:
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has expired.")
+
+    db.execute(update(User).where(User.id == user_id).values(hashed_password=hash_password(request.password)))
+    db.commit()
 
 #Register a new user
 @router.post("/register")

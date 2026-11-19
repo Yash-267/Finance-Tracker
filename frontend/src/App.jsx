@@ -6,6 +6,7 @@ import AdminRoute from "./components/AdminRoute";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import PasswordRecovery from "./pages/PasswordRecovery";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Recurring from "./pages/Recurring";
@@ -30,6 +31,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<PasswordRecovery key="request" />} />
+      <Route path="/reset-password" element={<PasswordRecovery key="reset" reset />} />
       <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
       <Route path="/transactions" element={<ProtectedRoute><Layout><Transactions /></Layout></ProtectedRoute>} />
       <Route path="/recurring" element={<ProtectedRoute><Layout><Recurring /></Layout></ProtectedRoute>} />
