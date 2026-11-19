@@ -576,18 +576,68 @@ h1, h2 {
 /* ----------------------------------------------------------------------
    7. RESPONSIVE APP LAYOUT & LEDGER TABLES
    ---------------------------------------------------------------------- */
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .app-shell { flex-direction: column; }
-  .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 1rem 1.5rem; border-right: none; border-bottom: 2px solid var(--ink); }
-  .sidebar-nav { flex-direction: row; gap: 1rem; }
-  .app-main { padding: 1.5rem; }
-  .dashboard-grid { grid-template-columns: 1fr; }
-  .ledger-row { grid-template-columns: 1fr !important; gap: 0.2rem; }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding: 1rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .sidebar-brand { margin-bottom: 0; }
+  .sidebar-nav { flex: 1 1 auto; flex-direction: row; flex-wrap: wrap; gap: 0.25rem 1rem; }
+  .app-main { min-width: 0; padding: 1.5rem; overflow-wrap: anywhere; }
+  .ledger-table { overflow-x: auto; }
+  .ledger-row { min-width: 32rem; }
+  .ledger-table.recurring .ledger-row { min-width: 42rem; }
+  .ledger-row > * { min-width: 0; }
+  .inline-form > *, .filter-bar select, .month-picker select { max-width: 100%; }
+  .filter-bar, .month-picker, .budget-row-header, .budget-edit, .row-actions { flex-wrap: wrap; }
+}
+
+.sidebar-menu-toggle { display: none; }
+
+@media (max-width: 720px) {
+  .sidebar-brand { margin-right: auto; }
+  .sidebar-menu-toggle {
+    display: inline-block;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--sidebar-muted);
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--sidebar-text);
+    font: inherit;
+    cursor: pointer;
+  }
+  .sidebar-nav[data-open="false"] { display: none; }
+  .sidebar-nav { flex: 0 0 100%; flex-direction: column; gap: 0; }
+  .sidebar-nav a { padding: 0.65rem 0; }
+  .sidebar-logout { min-height: 2.75rem; }
+  .sidebar :focus-visible { outline-color: var(--sidebar-text); }
+  .app-main { padding: 1rem; }
+  .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .stat-row { flex-wrap: wrap; }
+  .stat-block { flex-basis: 10rem; min-width: 0; }
+  .month-switcher .month-label { min-width: 0; }
+  .month-switcher .month-nav-button { flex-shrink: 0; }
+  .auth-form-panel { padding: 1.5rem; }
+  .auth-heading { font-size: clamp(2rem, 8vw, 3rem); }
+  .auth-field input, .inline-form input, .inline-form select, .filter-bar select,
+  .month-picker input, .month-picker select, .budget-edit input, .custom-share-row input {
+    font-size: 1rem;
+  }
 }
 
 /* ======================================================================
    8. TRANSACTION FILTERS & MONTH NAVIGATION
    ====================================================================== */
+
+.transactions-add-toggle, .transactions-month-short, .recurring-due-label { display: none; }
 
 .filter-bar { display: flex; align-items: center; gap: 0.6rem; margin: 1rem 0; }
 .filter-bar select {
@@ -624,6 +674,84 @@ h1, h2 {
   font-weight: 600;
   min-width: 9rem;
   text-align: center;
+}
+
+@media (max-width: 720px) {
+  .transactions-page .page-header {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .transactions-page .page-header h1 {
+    margin: 0;
+    font-size: clamp(1.2rem, 5.5vw, 1.75rem);
+  }
+  .transactions-page .month-switcher { gap: 0.25rem; white-space: nowrap; }
+  .transactions-page .month-label { font-size: 0.85rem; }
+  .transactions-page .month-nav-button {
+    width: 2rem;
+    min-height: 2.5rem;
+    border: 0;
+    border-radius: 0.4rem;
+  }
+  .transactions-month-full { display: none; }
+  .transactions-month-short { display: inline; text-decoration: none; }
+
+  .transactions-add-toggle {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+    min-height: 2.75rem;
+    border: 1px solid var(--ink);
+    border-radius: 0.5rem;
+    background: var(--ink);
+    color: var(--paper);
+    font: inherit;
+    cursor: pointer;
+  }
+  :is(.transactions-page, .recurring-page) .inline-form[data-open="false"] { display: none; }
+  :is(.transactions-page, .recurring-page) .inline-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0.5rem 0;
+  }
+  :is(.transactions-page, .recurring-page) .inline-form > * {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+    border-radius: 0.4rem;
+  }
+  :is(.transactions-page, .recurring-page) .inline-form input, :is(.transactions-page, .recurring-page) .inline-form select,
+  .transactions-page .filter-bar select { border: 1px solid var(--line); }
+  :is(.transactions-page, .recurring-page) .form-error { margin: 0.5rem 0; }
+  .transactions-page .filter-bar select {
+    width: 100%;
+    min-height: 2.75rem;
+    border-radius: 0.4rem;
+  }
+
+  :is(.transactions-page, .recurring-page) .ledger-table { border: 0; overflow: visible; }
+  :is(.transactions-page, .recurring-page) :is(.ledger-table.transactions, .ledger-table.recurring) .ledger-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-width: 0;
+    gap: 0.35rem 0.75rem;
+    margin-bottom: 0.6rem;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+  }
+  :is(.transactions-page, .recurring-page) .ledger-header { display: none; }
+  :is(.transactions-page, .recurring-page) .ledger-row .entry-category { grid-area: 1 / 1; font-weight: 600; }
+  :is(.transactions-page, .recurring-page) .ledger-row .mono { grid-area: 1 / 2; text-align: right; }
+  :is(.transactions-page, .recurring-page) .ledger-row .entry-description { grid-column: 1 / -1; color: var(--ink-soft); }
+  :is(.transactions-page, .recurring-page) .ledger-row .entry-type { color: var(--ink-soft); text-transform: capitalize; }
+  :is(.transactions-page, .recurring-page) .ledger-row .entry-date { color: var(--ink-soft); text-align: right; }
+  .transactions-page .ledger-row .link-button { grid-column: 2; justify-self: end; min-height: 2rem; }
+  .recurring-page h1 { margin: 0; font-size: clamp(1.2rem, 5.5vw, 1.75rem); }
+  .recurring-page .inline-form button { grid-column: 1 / -1; }
+  .recurring-due-label { display: inline; }
+  .recurring-page .row-actions { justify-content: flex-end; }
+  .recurring-page .row-actions button { min-height: 2.75rem; }
 }
 
 /* ======================================================================
@@ -785,4 +913,67 @@ h1, h2 {
 .user-info span:last-child {
   color: var(--ink-soft);
   font-size: 0.9rem;
+}
+
+.account-deletion { margin-top: 2rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+.account-deletion summary { cursor: pointer; color: var(--expense); }
+.account-deletion p { max-width: 36rem; }
+
+@media (max-width: 720px) {
+  :is(.monthly-dashboard, .admin-dashboard) h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 6vw, 1.9rem);
+  }
+
+  .monthly-dashboard .page-header { align-items: stretch; flex-direction: column; }
+  .monthly-dashboard .month-picker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(5rem, 30%);
+  }
+  .monthly-dashboard .month-picker > * {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+  }
+
+  :is(.monthly-dashboard, .admin-dashboard) .stat-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+    background: transparent;
+  }
+  :is(.monthly-dashboard, .admin-dashboard) .stat-block {
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.45rem;
+  }
+  :is(.monthly-dashboard, .admin-dashboard) .stat-value { font-size: clamp(1rem, 4.5vw, 1.35rem); }
+  .monthly-dashboard .stat-balance, .admin-totals .stat-block:last-child { grid-column: 1 / -1; }
+  .admin-dashboard .admin-recurring-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .admin-recurring-stats .stat-block { justify-content: space-between; }
+
+  .admin-dashboard .dashboard-grid { gap: 0.75rem; margin-top: 1rem; }
+  .admin-dashboard .ledger-section, .admin-dashboard .admin-users .ledger-row {
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.45rem;
+  }
+  .admin-dashboard .ledger-section h2 { margin-bottom: 0.5rem; }
+  .admin-dashboard .top-list li { gap: 0.75rem; }
+  .admin-dashboard .top-list .mono { text-align: right; }
+  .admin-dashboard .admin-users { border: 0; overflow: visible; }
+  .admin-dashboard .admin-users .ledger-header { display: none; }
+  .admin-dashboard .admin-users .ledger-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-width: 0;
+    gap: 0.25rem 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .admin-username { font-weight: 600; }
+  .admin-email { grid-column: 1 / -1; grid-row: 2; color: var(--ink-soft); }
+  .admin-role { grid-column: 2; grid-row: 1; color: var(--ink-soft); text-transform: capitalize; }
+  .admin-dashboard .admin-users .row-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .admin-dashboard .admin-users .link-button { min-height: 2.75rem; }
 }

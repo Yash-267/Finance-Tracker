@@ -1,4 +1,5 @@
 from pwdlib import PasswordHash
+from hashlib import sha256
 import jwt
 from datetime import datetime, timedelta, timezone
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -27,10 +28,11 @@ def hash_password(password: str):
 def verify_password(plain_password: str, hashed: str):
     return pwd_context.verify(plain_password, hashed)
 
-def create_access_token(user_id: int):
+def create_access_token(user: User):
     expiry = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
-        "sub": str(user_id),
+        "sub": str(user.id),
+        "account": sha256(user.hashed_password.encode()).hexdigest(),
         "exp": expiry
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -45,7 +47,7 @@ def verify_token(token:str, db:Session):
             return None
         
         user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
-        if not user:
+        if not user or payload.get("account") != sha256(user.hashed_password.encode()).hexdigest():
             return None
 
         return user

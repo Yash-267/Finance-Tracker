@@ -11,6 +11,9 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+class AccountDelete(BaseModel):
+    password: str = Field(min_length=1)
+
 class TransactionCreate(BaseModel):
     amount: float = Field(gt=0)
     type: Literal["income", "expense"]

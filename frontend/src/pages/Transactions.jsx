@@ -12,6 +12,7 @@ export default function Transactions() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [error, setError] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
 
   function loadTransactions() {
     api.get("/transactions/all").then((res) => setTransactions(res.data));
@@ -28,14 +29,15 @@ export default function Transactions() {
       const payload = {
         amount: Number(form.amount),
         type: form.type,
-        category: form.category,
-        description: form.description || null,
+        category: form.category.trim() || "uncategorized",
+        description: form.description.trim() ? form.description : "undefined",
       };
       if (form.date) {
         payload.created_at = new Date(form.date).toISOString();
       }
       await api.post("/transactions/add", payload);
       setForm({ amount: "", type: "expense", category: "", description: "", date: "" });
+      setShowAddForm(false);
       loadTransactions();
     } catch {
       setError("Couldn't add transaction — check the amount and category.");
@@ -72,12 +74,17 @@ export default function Transactions() {
       : monthTransactions.filter((t) => t.category === selectedCategory);
 
   return (
-    <div className="page">
+    <div className="page transactions-page">
       <div className="page-header">
         <h1>Transactions</h1>
         <div className="month-switcher">
           <button className="month-nav-button" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
-          <span className="month-label">{monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}</span>
+          <span className="month-label">
+            <span className="transactions-month-full">{monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}</span>
+            <abbr className="transactions-month-short" title={`${monthNames[viewDate.getMonth()]} ${viewDate.getFullYear()}`}>
+              {monthNames[viewDate.getMonth()].slice(0, 3)} {viewDate.getFullYear()}
+            </abbr>
+          </span>
           <button
             className="month-nav-button"
             onClick={() => shiftMonth(1)}
@@ -89,15 +96,26 @@ export default function Transactions() {
         </div>
       </div>
 
-      <form className="inline-form" onSubmit={handleAdd}>
-        <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required />
-        <input placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <input type="number" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
-        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+      <button
+        className="transactions-add-toggle"
+        type="button"
+        aria-expanded={showAddForm}
+        aria-controls="transaction-entry-form"
+        onClick={() => setShowAddForm((open) => !open)}
+      >
+        {showAddForm ? "Close form" : "+ Add transaction"}
+      </button>
+      <form id="transaction-entry-form" className="inline-form" data-open={showAddForm} onSubmit={handleAdd}>
+        <input className="entry-category" aria-label="Category" placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+        <input className="entry-description" aria-label="Description" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <input className="entry-amount" aria-label="Amount" type="number" step="0.01" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
+        <select className="entry-type" aria-label="Transaction type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
           <option value="expense">Expense</option>
           <option value="income">Income</option>
         </select>
         <input
+          className="entry-date"
+          aria-label="Date (optional)"
           type="date"
           value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -138,13 +156,13 @@ export default function Transactions() {
         )}
         {filteredTransactions.map((t) => (
           <div className="ledger-row" key={t.id}>
-            <span>{t.category}</span>
-            <span>{t.description || "—"}</span>
-            <span>{t.type}</span>
+            <span className="entry-category">{t.category}</span>
+            <span className="entry-description">{t.description || "—"}</span>
+            <span className="entry-type">{t.type}</span>
             <span className={`mono ${t.type === "income" ? "text-income" : "text-expense"}`}>
               {t.type === "income" ? "+" : "-"}₹{t.amount.toFixed(2)}
             </span>
-            <span>{new Date(t.created_at).toLocaleDateString("en-IN")}</span>
+            <span className="entry-date">{new Date(t.created_at).toLocaleDateString("en-IN")}</span>
             <button className="link-button" onClick={() => handleDelete(t.id)}>Delete</button>
           </div>
         ))}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -5,11 +6,18 @@ import { useNotifications } from "../context/NotificationContext";
 export default function Sidebar() {
   const { logout, user } = useAuth();
   const { unreadCount } = useNotifications();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">Ledger</div>
-      <nav className="sidebar-nav">
+      <button className="sidebar-menu-toggle" type="button" aria-expanded={menuOpen} aria-controls="sidebar-navigation" onClick={() => setMenuOpen(!menuOpen)}>
+        {menuOpen ? "Close menu" : "Menu"}
+        {!menuOpen && unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}
+      </button>
+      <nav id="sidebar-navigation" className="sidebar-nav" data-open={menuOpen} onClick={(event) => {
+        if (event.target.closest("a")) setMenuOpen(false);
+      }}>
         <NavLink to="/" end>Dashboard</NavLink>
         <NavLink to="/transactions">Transactions</NavLink>
         <NavLink to="/recurring">Recurring</NavLink>

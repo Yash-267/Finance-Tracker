@@ -30,12 +30,12 @@ export default function AdminDashboard() {
   const overdue = recurring.filter((r) => r.overdue);
 
   return (
-    <div className="page">
+    <div className="page admin-dashboard">
       <h1>Admin</h1>
 
       {stats && (
         <>
-          <div className="stat-row">
+          <div className="stat-row admin-totals">
             <div className="stat-block">
               <span className="stat-label">Users</span>
               <span className="stat-value">{stats.total_users}</span>
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="stat-row">
+          <div className="stat-row admin-recurring-stats">
             <div className="stat-block stat-income">
               <span className="stat-label">Active recurring</span>
               <span className="stat-value">{stats.active_recurring}</span>
@@ -113,9 +113,9 @@ export default function AdminDashboard() {
         </div>
         {users.map((u) => (
           <div className="ledger-row" key={u.id}>
-            <span>{u.username}</span>
-            <span>{u.email}</span>
-            <span>{u.role}</span>
+            <span className="admin-username">{u.username}</span>
+            <span className="admin-email">{u.email}</span>
+            <span className="admin-role">{u.role}</span>
             <span className="row-actions">
               {u.role === "admin" ? (
                 <button className="link-button" onClick={() => handleRoleChange(u.id, "user")}>Demote</button>
